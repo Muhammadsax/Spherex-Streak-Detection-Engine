@@ -53,7 +53,7 @@ from spherex_streak.utils.visualization import (
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="SPHEREx Satellite Streak Processor",
-    page_icon="🌌",
+    page_icon="https://upload.wikimedia.org/wikipedia/commons/e/e5/NASA_logo.svg",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -253,7 +253,7 @@ def render_sidebar() -> dict:
 # Main Application Logic
 # ---------------------------------------------------------------------------
 def main():
-    st.title("🌌 SPHEREx Satellite Streak Detection Engine")
+    st.title("SPHEREx Satellite Streak Detection Engine")
     st.markdown(
         "**NASA Space Apps Challenge | Surgical Non-Destructive Probability Quality Mask (PQM) Processing**  \n"
         "Detects low-SNR satellite streaks without erasing native spectrophotometric data or cosmic water/ice absorption lines."
@@ -322,14 +322,14 @@ def main():
     stats = pqm_engine.compute_statistics(pqm, threshold=config["threshold"])
 
     # 3. Render Top Metrics Row
-    st.subheader(f"📊 Real-Time Diagnostic Dashboard — {data_label}")
+    st.subheader(f"Diagnostic Metrics Dashboard: {data_label}")
     col1, col2, col3, col4 = st.columns(4)
 
     # Calculate Soft IoU against ground truth if available
     has_gt = np.sum(gt_mask) > 0
     if has_gt:
         iou_val = soft_iou_score(pqm, gt_mask)
-        col1.metric("Soft IoU Score", f"{iou_val:.4f}", delta="≥ 0.95 Target Met" if iou_val >= 0.95 else "Sub-target")
+        col1.metric("Soft IoU Score", f"{iou_val:.4f}", delta="Target Met (>= 0.95)" if iou_val >= 0.95 else "Sub-target")
     else:
         col1.metric("Soft IoU Score", "N/A (Unlabeled FITS)", help="Ground truth mask absent in uploaded FITS.")
 
@@ -343,7 +343,7 @@ def main():
     )
 
     # 4. Render 4-Panel Side-by-Side Visualization
-    st.markdown("### 🔍 4-Panel Side-by-Side Surgical Comparison")
+    st.markdown("### 4-Panel Side-by-Side Surgical Comparison")
     st.caption(
         "Panel 1 shows the original science image with cyan streak detection contour. "
         "Panel 2 presents the continuous Float32 Probability Quality Mask [0.0, 1.0]. "
@@ -365,7 +365,7 @@ def main():
 
     # 5. SPHEREx 102-Band Non-Destructive Spectrophotometry Demonstration
     st.markdown("---")
-    st.subheader("🔬 SPHEREx 102-Band Non-Destructive Spectrophotometry Inspection")
+    st.subheader("SPHEREx 102-Band Non-Destructive Spectrophotometry Inspection")
     st.caption(
         "Verification of cosmic ice & water absorption line preservation. Traditional algorithms "
         "zero out pixels, wiping out absorption features permanently. Under our Inverse-Variance "
@@ -398,14 +398,14 @@ def main():
 
     # 6. Data Export & Verification Report
     st.markdown("---")
-    st.subheader("💾 Export & Verification Report")
+    st.subheader("Export & Verification Report")
     exp_col1, exp_col2, exp_col3 = st.columns(3)
 
     # Export PQM as FITS
     pqm_fits_buf = io.BytesIO()
     fits.PrimaryHDU(data=pqm).writeto(pqm_fits_buf)
     exp_col1.download_button(
-        "📥 Download Continuous PQM (FITS)",
+        "Download Continuous PQM (FITS)",
         data=pqm_fits_buf.getvalue(),
         file_name="spherex_pqm_mask.fits",
         mime="application/fits",
@@ -415,7 +415,7 @@ def main():
     eff_var_buf = io.BytesIO()
     fits.PrimaryHDU(data=eff_var).writeto(eff_var_buf)
     exp_col2.download_button(
-        "📥 Download Effective Variance Map (FITS)",
+        "Download Effective Variance Map (FITS)",
         data=eff_var_buf.getvalue(),
         file_name="spherex_effective_variance.fits",
         mime="application/fits",
@@ -434,7 +434,7 @@ def main():
         "summary": preservation_report.summary,
     }
     exp_col3.download_button(
-        "📄 Download Verification Report (JSON)",
+        "Download Verification Report (JSON)",
         data=json.dumps(diag_data, indent=2),
         file_name="spherex_verification_report.json",
         mime="application/json",

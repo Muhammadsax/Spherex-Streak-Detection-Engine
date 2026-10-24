@@ -5,7 +5,17 @@ A lightweight, non-destructive Python toolkit to detect low-SNR satellite streak
 in astronomical FITS images without modifying native spectrophotometric data.
 """
 
+from spherex_streak.detection import PQMStatistics, ProbabilityQualityMaskEngine
 from spherex_streak.io.fits_loader import FITSLoader, SPHEREX_N_BANDS, adaptive_normalise
+from spherex_streak.metrics import (
+    CombinedFocalSoftIoULoss,
+    SoftIoULoss,
+    SpectralPreservationReport,
+    compute_effective_variance,
+    compute_photometric_weights,
+    soft_iou_score,
+    verify_non_destructive_integrity,
+)
 from spherex_streak.model import (
     DeepStreaksCNN,
     DilatedResidualBlock,
@@ -43,4 +53,14 @@ __all__ = [
     "DilatedResidualBlock",
     "FocalLoss",
     "build_deepstreaks_model",
+    # Phase 4: Evaluation Metrics & Inverse-Variance Weighting
+    "soft_iou_score",
+    "SoftIoULoss",
+    "CombinedFocalSoftIoULoss",
+    "compute_effective_variance",
+    "compute_photometric_weights",
+    "verify_non_destructive_integrity",
+    "SpectralPreservationReport",
+    "ProbabilityQualityMaskEngine",
+    "PQMStatistics",
 ]

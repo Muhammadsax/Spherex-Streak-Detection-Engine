@@ -1,44 +1,83 @@
-# 🌌 محرك كشف أطياف الأقمار الاصطناعية — Spherex-Streak-Detection-Engine
-### NASA Space Apps Challenge | SPHEREx Satellite Streak Detection & Surgical Processing
-
-[![Tests](https://img.shields.io/badge/tests-69%20passed-brightgreen.svg)]()
-[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)]()
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.1+-ee4c2c.svg)]()
-[![Astropy](https://img.shields.io/badge/Astropy-5.3+-orange.svg)]()
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-ff4b4b.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-green.svg)]()
-
-نظام ذكاء اصطناعي ومعالجة صور فلكية خفيف الوزن، مصمم لمعالجة صور تلسكوب **NASA SPHEREx** الفضائي لكشف أطياف ومسارات الأقمار الاصطناعية (Satellite Streaks & Train-Track Patterns) بطريقة **جراحية غير مدمرة** تحافظ بنسبة 100% على البيانات الطيفية الأصلية وبصمات امتصاص المياه والثلج الكونية دون حذف أو تصفير أي بكسل.
+# محرك كشف أطياف الأقمار الاصطناعية (Spherex-Streak-Detection-Engine)
+## تحدي ناسا الدولي لتطبيقات الفضاء (NASA Space Apps Challenge)
+### معالجة بيانات تلسكوب SPHEREx الفضائي باستخدام الذكاء الاصطناعي الجراحي غير المدمر
 
 ---
 
-## 🎯 الأهداف والمعايير الأساسية (Core Technical Guardrails)
+## 1. ملخص المشروع (Executive Summary)
 
-1. **معالجة جراحية غير مدمرة (Surgical Non-Destructive):** الحفاظ التام على التدفق الفلكي $I(x, y)$ وبصمات الامتصاص للمياه والثلج عند $3.05\,\mu\text{m}$.
-2. **قناع جودة الاحتمالية (PQM Matrix):** مصفوفة ثقة مستمرة من النوع `Float32` بالمدى $[0.0, 1.0]$ ونفس حجم الصورة الأصلي $(N \times M)$ عبر دالة `Sigmoid`.
-3. **قانون وزن التباين العكسي (Inverse-Variance Weighting):**
-   $$\sigma^2_{\text{effective}}(x, y) = \frac{\sigma^2(x, y)}{w(x, y)}, \qquad w(x, y) = 1.0 - \text{PQM}(x, y)$$
-4. **تطبيع تكيفي ديناميكي (Dynamic Preprocessing):** تقدير إحصائي حصين لضوضاء الخلفية عبر $\sigma_{\text{MAD}} = 1.4826 \times \text{MAD}$ بدون أي عتبات صلبة ثابتة (`no hardcoded thresholds`).
-5. **التحقق الطيفي عبر نطاقات SPHEREx الـ 102:** التمييز الفيزيائي بين مسارات الأقمار العابرة والمعالم الفلكية الطبيعية الممتدة (Comet tails, Nebulae filaments).
-6. **دالة خسارة Focal Loss ($\gamma \ge 2.0$):** لكشف الإشارات الضعيفة القريبة من أرضية الضوضاء (Low-SNR faint streaks near noise-floor).
-7. **مقياس التقييم المستمر Soft IoU:** استهداف تحقيق نسبة دقة $\ge 0.95$.
-8. **واجهة تفاعلية فورية (Interactive Streamlit UI):** مقارنة جنباً إلى جنب للصور الأصلية والـ PQM وخريطة التباين الفعال.
+يعد مشروع **محرك كشف أطياف الأقمار الاصطناعية (Spherex-Streak-Detection-Engine)** أداة برمجية ذكية متخصصة طُورت بلغة Python لصالح معالجة بيانات وتصوير تلسكوب الفضاء **SPHEREx** التابع لوكالة ناسا. 
+
+يقوم النظام بالكشف التلقائي الدقيق عن مسارات وأطياف الأقمار الاصطناعية وحطام الفضاء (Satellite Streaks & Train-Track Patterns) التي تلوث الصور الفلكية بصيغة FITS، مع تطبيق فلسفة المعالجة الجراحية غير المدمرة لحماية البيانات العلمية الأصلية، وتحديداً بصمات امتصاص المياه والثلج الكوني.
 
 ---
 
-## 🏗️ مراحل التنفيذ الخمس (5-Phase Architecture)
+## 2. وصف المشكلة العلمية (Problem Statement)
+
+يعمل تلسكوب SPHEREx في المدار الأرضي المنخفض لمسح السماء بأكملها عبر 102 نطاق طيفي تتراوح بين 0.75 و 5.0 ميكرومتر، بهدف دراسة نشأة الكون ومصادر المياه والمواد العضوية في مجرتنا. 
+
+مع تزايد كوكبات الأقمار الاصطناعية في المدار المنخفض، تتعرض عمليات الرصد لظاهرة التلوث البصري الناتج عن عبور تلك الأجسام بسرعة عالية أمام عدسات التلسكوب، مما يترك مسارات خطية خافتة وضعيفة التباين (Low-SNR Streaks) أو خطوطاً متوازية متقاربة تُعرف بمسارات القطار (Train-Track Patterns).
+
+### قصور الأساليب التقليدية:
+تعتمد الطرق التقليدية في معالجة الصور الفلكية على:
+1. قص الأجزاء الملوثة من الصورة (Destructive Cropping).
+2. استبدال قيم البكسلات الملوثة بالصفر أو بمتوسط المنطقة المجاورة (Destructive Zeroing / Pixel Masking).
+
+يؤدي هذا الإجراء إلى فقدان وتدمير دائم للبصمات الطيفية الفلكية الأصلية، لا سيما خط امتصاص جليد الماء عند 3.05 ميكرومتر وخط امتصاص ثاني أكسيد الكربون عند 4.26 ميكرومتر، مما يعيق الدراسات التحليلية اللاحقة.
+
+---
+
+## 3. الحل التقني والمعالجة الجراحية غير المدمرة (Surgical Non-Destructive Solution)
+
+يقدم هذا المشروع حلاً متقدماً يرتكز على القواعد الرياضية والفيزيائية التالية:
+
+### أ. قناع جودة الاحتمالية المستمر (Probability Quality Mask - PQM)
+عوضاً عن اتخاذ قرارات ثنائية قاطعة (0 أو 1)، ينتج النموذج مصفوفة ثقة مستمرة من النوع Float32 تتراوح قيمها بين [0.0 و 1.0] بحجم الصورة الكاملة ($N \times M$). يمثل كل بكسل احتمالية تلوثه دون المساس بقيمته الأصلية.
+
+### ب. قانون وزن التباين العكسي (Inverse-Variance Weighting)
+تُعدّل أوزان القياسات الضوئية اللاحقة استناداً إلى تباين البكسل الفعّال:
+$$\sigma^2_{\text{effective}}(x, y) = \frac{\sigma^2(x, y)}{w(x, y)}$$
+حيث:
+$$w(x, y) = 1.0 - \text{PQM}(x, y)$$
+
+- **في المناطق الفلكية السليمة:** $\text{PQM} \approx 0.0 \implies w \approx 1.0 \implies \sigma^2_{\text{effective}} = \sigma^2$ (يحتفظ البكسل بوزنه العلمي الكامل وبتباينه الأصلي).
+- **في المناطق الملوثة بمسارات الأقمار:** $\text{PQM} \to 1.0 \implies w \to 0.0 \implies \sigma^2_{\text{effective}} \to \infty$ (ينخفض وزن مساهمة البكسل في القياسات التراكمية $W = 1 / \sigma^2_{\text{effective}}$ تلقائياً دون حذفه أو تشويه تدفقه الأصلي).
+
+### ج. التطبيع التكيفي الديناميكي (Dynamic Adaptive Preprocessing)
+يُقدَّر تباين وضوضاء خلفية السماء إحصائياً بشكل مستقل لكل صورة باستخدام الوسيط والانحراف المطلق عن الوسيط الحصين:
+$$\sigma_{\text{MAD}} = 1.4826 \times \text{median}\left(\left|I - \text{median}(I)\right|\right)$$
+يضمن ذلك التكيف الآلي مع ظروف الرصد المتغيرة دون استخدام أي عتبات رقمية ثابتة في الكود (Zero Hardcoded Thresholds).
+
+### د. التحقق الطيفي عبر نطاقات SPHEREx الـ 102 (Spectral Discrimination)
+يمتلك النظام منطقاً فيزيائياً يميز بين:
+- **مسارات الأقمار الاصطناعية:** ظاهرة عابرة تظهر في نطاق واحد أو نطاقات زمنية محدودة جداً ($\le 15\%$ من النطاقات)، بمقطع عرضي يطابق دالة توزيع النقطة البصرية للتلسكوب (FWHM $\approx 1.5 - 2.5$ بكسل).
+- **المعالم الفلكية الطبيعية الممتدة (Comet Tails & Nebulae Filaments):** تراكيب طبيعية مستمرة عبر أغلب النطاقات الطيفية ($\ge 40\%$) وبمقطع عرضي متسع (FWHM $> 4.0$ بكسل). يتم استثناؤها وحمايتها بالكامل من أي حجب.
+
+### هـ. كشف الإشارات الضعيفة عبر دالة خسارة Focal Loss
+$$\mathcal{L}_{\text{focal}} = -\alpha_t (1 - p_t)^\gamma \log(p_t + \epsilon), \qquad \gamma \ge 2.0$$
+يعمل المعامل $\gamma \ge 2.0$ على كبح مساهمة خلفية السماء المظلمة بأكثر من 1000 ضعف مقارنة بدوال الخسارة التقليدية، مما يُبقي تركيز الشبكة العصبية منصباً على التقاط المسارات الخافتة المتداخلة مع الضوضاء.
+
+### و. مقياس الدقة المستمر (Continuous Soft IoU)
+$$\text{Soft IoU}(P, G) = \frac{\sum P \cdot G}{\sum \left(P^2 + G^2 - P \cdot G\right) + \epsilon}$$
+يستهدف النظام تحقيق نسبة تطابق Soft IoU تتجاوز $\ge 0.95$ على عينات الاختبار.
+
+---
+
+## 4. الهيكل البرمجي للمستودع (Repository Structure)
 
 ```
 spherex-streak-processor/
 ├── app/
-│   ├── streamlit_app.py               ← واجهة العرض التفاعلية الشاملة
-│   └── main.py                        ← المدخل الرئيسي لتشغيل الواجهة
-├── src/                               ← الموديولات الأساسية المباشرة
-│   ├── fits_loader.py                 ← قارئ FITS الآمن وتطبيع النسب المئوية
-│   ├── preprocessing.py               ← التطبيع التكيفي والتحقق عبر 102 نطاق
-│   ├── model.py                       ← نموذج DeepStreaks CNN ودالة Focal Loss
-│   ├── metrics.py                     ← مقياس Soft IoU ووزن التباين العكسي
-│   └── spherex_streak/                ← حزمة بايثون الموحدة
+│   ├── main.py                        # المدخل الرئيسي لتشغيل واجهة المستخدم
+│   ├── streamlit_app.py               # لوحة التحكم التفاعلية والمقارنة جنباً إلى جنب
+│   └── __init__.py
+│
+├── src/                               # الموديولات الأساسية المباشرة
+│   ├── fits_loader.py                 # قارئ ملفات FITS والتطبيع التكيفي
+│   ├── preprocessing.py               # التطبيع وطرح الضوضاء والتحقق الطيفي
+│   ├── model.py                       # شبكة DeepStreaks التلفيفية ودالة Focal Loss
+│   ├── metrics.py                     # مقياس Soft IoU ووزن التباين العكسي
+│   └── spherex_streak/                # الحزمة البرمجية الموحدة
 │       ├── io/fits_loader.py
 │       ├── preprocessing/adaptive.py
 │       ├── models/deepstreaks.py
@@ -46,73 +85,105 @@ spherex-streak-processor/
 │       ├── detection/pqm.py
 │       ├── weighting/inv_variance.py
 │       └── utils/visualization.py
-├── tests/                             ← 69 اختبار آلي شامل (100% نجاح)
-│   ├── test_fits_loader.py            (18 tests)
-│   ├── test_preprocessing.py          (11 tests)
-│   ├── test_model.py                  (13 tests)
-│   ├── test_metrics.py                (13 tests)
-│   ├── test_pqm.py                    (4 tests)
-│   ├── test_weighting.py              (4 tests)
-│   └── test_app.py                    (6 tests)
-└── scripts/
-    ├── download_sparkles.py           ← تنزيل عينات SPARKLES من Zenodo
-    ├── train.py                       ← تدريب النموذج بدالة Focal + Soft IoU
-    └── evaluate.py                    ← تقييم الأداء والتحقق من حفظ البيانات
+│
+├── tests/                             # 69 اختبار وحدة وتكامل آلي شامل
+│   ├── test_fits_loader.py            # اختبارات سلامة FITS وحفظ البيانات
+│   ├── test_preprocessing.py          # اختبارات التطبيع التكيفي والتحقق الطيفي
+│   ├── test_model.py                  # اختبارات DeepStreaks و PQM و Focal Loss
+│   ├── test_metrics.py                # اختبارات مقياس Soft IoU وقانون التباين العكسي
+│   ├── test_pqm.py                    # اختبارات محرك قناع جودة الاحتمالية
+│   ├── test_weighting.py              # اختبارات قانون الأوزان الفعالة
+│   └── test_app.py                    # اختبارات واجهة المستخدم والتوليد
+│
+├── scripts/                           # أدوات الأتمتة والتدريب
+│   ├── download_sparkles.py           # تنزيل عينات مجموعة SPARKLES من Zenodo
+│   ├── train.py                       # خط تدريب النموذج العصبي
+│   └── evaluate.py                    # تقييم الأداء والتحقق من صيانة الأطياف
+│
+├── .streamlit/
+│   └── config.toml                    # إعدادات مظهر الواجهة التفاعلية
+├── pyproject.toml                     # توصيف الحزمة وإعدادات التثبيت
+├── requirements.txt                   # متطلبات ومكتبات التشغيل
+├── .env.example                       # نموذج توضيحي آمن لمتغيرات البيئة
+├── .gitignore                         # استبعاد البيانات والنماذج والملفات الحساسة
+└── README.md                          # الوثائق الرسمية للمشروع
 ```
 
 ---
 
-## ⚡ التشغيل السريع (Quickstart)
+## 5. متطلبات التشغيل والتثبيت (Installation)
 
-### 1. تثبيت الحزمة
+### المتطلبات الأساسية:
+- نظام تشغيل: Windows أو Linux أو macOS.
+- بيئة Python 3.10 أو أحدث.
+
+### خطوات التثبيت:
 ```bash
+# استنساخ المستودع
 git clone https://github.com/Muhammadsax/Spherex-Streak-Detection-Engine.git
 cd Spherex-Streak-Detection-Engine
+
+# تثبيت الحزمة بكافة متطلباتها في الوضع القابل للتعديل
 pip install -e ".[dev]"
 ```
 
-### 2. تشغيل الاختبارات الآلية
+---
+
+## 6. التحقق والاختبارات الآلية (Testing & Verification)
+
+يحتوي المستودع على حزمة اختبارات برمجية وعلمية شاملة تتألف من 69 اختباراً، تغطي دقة الأبعاد، ونوع البيانات Float32، وحدود الـ PQM، وعدم تعديل مصفوفة التدفق الفلكي الأصلية بأي شكل.
+
+لتشغيل الاختبارات بالكامل:
 ```bash
 pytest tests/ -v
-# النتيجة: 69 passed in ~9s ✅
 ```
 
-### 3. إطلاق واجهة المستخدم التفاعلية (Streamlit Dashboard)
+النتيجة المتوقعة:
+```
+tests/test_app.py            ......               (6 passed)
+tests/test_fits_loader.py    ..................   (18 passed)
+tests/test_preprocessing.py  ...........          (11 passed)
+tests/test_model.py          .............        (13 passed)
+tests/test_metrics.py        .............        (13 passed)
+tests/test_pqm.py            ....                 (4 passed)
+tests/test_weighting.py      ....                 (4 passed)
+=========================== 69 passed in 9.13s ===========================
+```
+
+---
+
+## 7. تشغيل لوحة التحكم التفاعلية (Interactive Web UI)
+
+يوفر المشروع واجهة مستخدم تفاعلية تعتمد على إطار عمل Streamlit لاستعراض نتائج المعالجة بشكل فوري:
+
 ```bash
 streamlit run app/main.py
 ```
-سيعمل التطبيق محلياً على المتصفح عبر الرابط: `http://localhost:8501`.
+
+تفتح اللوحة في المتصفح عبر الرابط: `http://localhost:8501`.
+
+### خصائص الواجهة:
+1. **عرض مقارن رباعي جنباً إلى جنب:**
+   - الصورة الفلكية الأصلية مع تحديد مسار التلوث (دون تشويه النجوم أو الأطياف).
+   - خريطة PQM الاحتمالية المستمرة.
+   - خريطة التباين الفعال $\sigma^2_{\text{effective}}$ بمقياس لوغاريتمي.
+   - خريطة الأوزان الضوئية التراكمية $W$.
+2. **فحص الامتصاص الطيفي عبر 102 نطاق:**
+   - فحص خط امتصاص جليد الماء عند 3.05 ميكرومتر وإثبات تطابق التدفق بنسبة 100% قبل المعالجة وبعدها.
+3. **خيارات العرض الفوري:**
+   - نماذج محاكاة جاهزة بضغطة زر واحدة (Low-SNR Faint Streaks و Train-Tracks).
+   - إمكانية رفع أي ملف FITS خام خارجي ومعالجته فوراً.
+   - تنزيل مصفوفة PQM وخريطة التباين بصيغة FITS، وتنزيل تقرير التحقق العلمي بصيغة JSON.
 
 ---
 
-## 🔬 الخوارزميات والمعادلات الرياضية (Mathematical Laws)
+## 8. مجموعة البيانات المعتمدة (Dataset & Provenance)
 
-### 1. Continuous Soft IoU (Continuous Jaccard Index)
-$$\text{Soft IoU}(P, G) = \frac{\sum_{i} P_i \cdot G_i}{\sum_{i} \left(P_i^2 + G_i^2 - P_i \cdot G_i\right) + \epsilon}$$
-- يعامل الـ PQM كقيم احتمالية مستمرة في $[0.0, 1.0]$.
-- يعطي $1.0$ في حالة التطابق التام، ويحقق الهدف التقني $\ge 0.95$.
-
-### 2. Inverse-Variance Weighting Law
-$$\sigma^2_{\text{effective}}(x, y) = \frac{\sigma^2(x, y)}{w(x, y)}, \qquad W(x, y) = \frac{1}{\sigma^2_{\text{effective}}(x, y)}$$
-- البكسلات الملوثة بمسارات الأقمار الصناعية ($w \to 0$) تصبح $\sigma^2_{\text{effective}} \to \infty$ وبالتالي ينخفض وزنها الضوئي $W \to 0$ تلقائياً.
-- البكسلات السليمة تحتفظ بـ $\sigma^2$ ووزنها كاملاً.
-
-### 3. Focal Loss for Low-SNR Signals
-$$\mathcal{L}_{\text{focal}} = -\alpha_t (1 - p_t)^\gamma \log(p_t + \epsilon), \qquad \gamma \ge 2.0$$
-- يكبح مساهمة خلفية السماء المظلمة السهلة بأكثر من 1000 ضعف مقارنة بالـ BCE، مما يركز التدرج على المسارات الخافتة.
+- **المصدر:** مجموعة بيانات **SPARKLES Dataset** المعتمدة من قبل مركز أبحاث ناسا أميس (NASA Ames Research Center)، والمنشورة على منصة **Zenodo** برقم السجل المعياري `10935280`.
+- **المرجع العلمي:** نموذج DeepStreaks للشبكات التلفيفية (arXiv:1904.05920).
 
 ---
 
-## 🚀 النشر السحابي (Cloud Deployment)
+## 9. الترخيص (License)
 
-التطبيق مهيأ بالكامل للنشر الفوري بنقرة واحدة على:
-- **Streamlit Community Cloud:** باختيار مستودع GitHub وتحديد الملف `app/main.py`.
-- **Hugging Face Spaces:** باختيار SDK: Streamlit.
-- ملف التهيئة `.streamlit/config.toml` مدمج ومضبوط بالسمة الفضائية الداكنة (NASA Dark Theme).
-
----
-
-## 👥 المساهمون وفريق العمل
-- **Project:** Spherex-Streak-Detection-Engine
-- **Event:** NASA Space Apps Challenge
-- **Focus:** NASA SPHEREx Mission & SPARKLES Dataset
+هذا المشروع منشور تحت رخصة MIT المفتوحة المصدر لصالح الأبحاث الفلكية واستكشاف الفضاء.

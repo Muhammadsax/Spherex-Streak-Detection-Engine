@@ -1,0 +1,30 @@
+# ============================================================
+#  Spherex-Streak-Detection-Engine — requirements.txt
+# ============================================================
+
+# FITS & Astronomy
+astropy>=5.3
+
+# Deep Learning
+torch>=2.1
+torchvision>=0.16
+
+# Numerical Computing
+numpy>=1.26
+scipy>=1.11
+
+# Environment Variables
+python-dotenv>=1.0
+
+# Demo UI
+streamlit>=1.32
+
+# Visualization
+matplotlib>=3.8
+
+# Dataset Download
+requests>=2.31
+
+# Testing
+pytest>=8.0
+pytest-cov>=4.1

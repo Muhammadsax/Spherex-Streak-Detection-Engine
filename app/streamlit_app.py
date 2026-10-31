@@ -53,7 +53,7 @@ from spherex_streak.utils.visualization import (
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="SPHEREx Satellite Streak Processor",
-    page_icon="https://upload.wikimedia.org/wikipedia/commons/e/e5/NASA_logo.svg",
+    page_icon=":material/satellite_alt:",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -168,7 +168,7 @@ def load_deepstreaks_model() -> torch.nn.Module:
 # ---------------------------------------------------------------------------
 def render_sidebar() -> dict:
     st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/e/e5/NASA_logo.svg", width=110)
-    st.sidebar.title("Configuration")
+    st.sidebar.title(":material/tune: Configuration")
 
     st.sidebar.markdown(
         """
@@ -206,7 +206,7 @@ def render_sidebar() -> dict:
         )
 
     st.sidebar.markdown("---")
-    st.sidebar.subheader("Visualization Settings")
+    st.sidebar.subheader(":material/palette: Visualization Settings")
 
     cmap_choice = st.sidebar.selectbox(
         "Colormap (Science Image)",
@@ -253,7 +253,7 @@ def render_sidebar() -> dict:
 # Main Application Logic
 # ---------------------------------------------------------------------------
 def main():
-    st.title("SPHEREx Satellite Streak Detection Engine")
+    st.title(":material/satellite_alt: SPHEREx Satellite Streak Detection Engine")
     st.markdown(
         "**NASA Space Apps Challenge | Surgical Non-Destructive Probability Quality Mask (PQM) Processing**  \n"
         "Detects low-SNR satellite streaks without erasing native spectrophotometric data or cosmic water/ice absorption lines."
@@ -322,7 +322,7 @@ def main():
     stats = pqm_engine.compute_statistics(pqm, threshold=config["threshold"])
 
     # 3. Render Top Metrics Row
-    st.subheader(f"Diagnostic Metrics Dashboard: {data_label}")
+    st.subheader(f":material/analytics: Diagnostic Metrics Dashboard: {data_label}")
     col1, col2, col3, col4 = st.columns(4)
 
     # Calculate Soft IoU against ground truth if available
@@ -343,7 +343,7 @@ def main():
     )
 
     # 4. Render 4-Panel Side-by-Side Visualization
-    st.markdown("### 4-Panel Side-by-Side Surgical Comparison")
+    st.markdown("### :material/compare: 4-Panel Side-by-Side Surgical Comparison")
     st.caption(
         "Panel 1 shows the original science image with cyan streak detection contour. "
         "Panel 2 presents the continuous Float32 Probability Quality Mask [0.0, 1.0]. "
@@ -365,7 +365,7 @@ def main():
 
     # 5. SPHEREx 102-Band Non-Destructive Spectrophotometry Demonstration
     st.markdown("---")
-    st.subheader("SPHEREx 102-Band Non-Destructive Spectrophotometry Inspection")
+    st.subheader(":material/science: SPHEREx 102-Band Non-Destructive Spectrophotometry Inspection")
     st.caption(
         "Verification of cosmic ice & water absorption line preservation. Traditional algorithms "
         "zero out pixels, wiping out absorption features permanently. Under our Inverse-Variance "
@@ -398,7 +398,7 @@ def main():
 
     # 6. Data Export & Verification Report
     st.markdown("---")
-    st.subheader("Export & Verification Report")
+    st.subheader(":material/save: Export & Verification Report")
     exp_col1, exp_col2, exp_col3 = st.columns(3)
 
     # Export PQM as FITS
@@ -409,6 +409,7 @@ def main():
         data=pqm_fits_buf.getvalue(),
         file_name="spherex_pqm_mask.fits",
         mime="application/fits",
+        icon=":material/download:",
     )
 
     # Export Effective Variance Map as FITS
@@ -419,6 +420,7 @@ def main():
         data=eff_var_buf.getvalue(),
         file_name="spherex_effective_variance.fits",
         mime="application/fits",
+        icon=":material/download:",
     )
 
     # Export Verification JSON
@@ -438,6 +440,7 @@ def main():
         data=json.dumps(diag_data, indent=2),
         file_name="spherex_verification_report.json",
         mime="application/json",
+        icon=":material/description:",
     )
 
 

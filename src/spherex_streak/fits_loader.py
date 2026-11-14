@@ -17,7 +17,7 @@ def load_fits_image(file_path):
 
 if __name__ == "__main__":
     sample_path = "data/raw.sample.fits"
-    print(جاري محاولة قراءة الملف التجريبي من: {sample_path})
+    print(f"جاري محاولة قراءة الملف التجريبي من: {sample_path}")
     
     try:
         data, header = load_fits_image(sample_path)

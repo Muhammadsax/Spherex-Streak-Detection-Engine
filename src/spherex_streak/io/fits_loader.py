@@ -48,10 +48,12 @@ logger = logging.getLogger(__name__)
 # SPHEREx operates across 102 spectral bands (0.75 – 5.0 µm)
 SPHEREX_N_BANDS: int = 102
 
-# Standard FITS extension names used by SPHEREx & SPARKLES
-_EXT_SCIENCE     = ("SCI", 1)   # (name, fallback index)
-_EXT_UNCERTAINTY = ("UNC", 2)
-_EXT_COVERAGE    = ("COV", 3)
+# Standard FITS extension names:
+# Official SPHEREx Level-2 specification: IMAGE, FLAGS, VARIANCE, WCS-WAVE
+# Supported with backwards-compatible fallback to benchmark/legacy names (SCI, UNC, COV)
+_EXT_SCIENCE     = (("IMAGE", "SCI"), 1)   # (names, fallback index)
+_EXT_UNCERTAINTY = (("VARIANCE", "UNC"), 2)
+_EXT_COVERAGE    = (("FLAGS", "COV"), 3)
 
 # Percentile clipping bounds for adaptive normalisation
 _NORM_LOW_PCT  = 0.5   # bottom 0.5 %  — clips extreme dark pixels / cosmic artefacts
@@ -71,28 +73,35 @@ def _safe_cast_float32(data: np.ndarray) -> np.ndarray:
 
 def _extract_extension(
     hdul: fits.HDUList,
-    ext_name: str,
+    ext_names: str | tuple[str, ...],
     ext_index: int,
 ) -> Optional[np.ndarray]:
     """
-    Try to extract a FITS extension by name first, then by index.
+    Try to extract a FITS extension by name(s) first, then by index.
+    Supports official SPHEREx Level-2 extensions (IMAGE/FLAGS/VARIANCE)
+    and legacy formats (SCI/UNC/COV).
     Returns a float32 array or None if the extension is absent.
     """
-    # Try by name
-    if ext_name in hdul:
-        data = hdul[ext_name].data
-        if data is not None:
-            logger.debug("Loaded extension '%s' by name.", ext_name)
-            return _safe_cast_float32(data)
+    candidate_names = [ext_names] if isinstance(ext_names, str) else list(ext_names)
+
+    # Try by names
+    for name in candidate_names:
+        if name in hdul:
+            data = hdul[name].data
+            if data is not None:
+                logger.debug("Loaded extension '%s' by name.", name)
+                if name == "VARIANCE":
+                    data = np.sqrt(np.maximum(data, 0.0))
+                return _safe_cast_float32(data)
 
     # Try by index
     if ext_index < len(hdul):
         data = hdul[ext_index].data
         if data is not None:
-            logger.debug("Loaded extension %d as fallback for '%s'.", ext_index, ext_name)
+            logger.debug("Loaded extension %d as fallback for '%s'.", ext_index, candidate_names[0])
             return _safe_cast_float32(data)
 
-    logger.debug("Extension '%s' (index %d) not found — returning None.", ext_name, ext_index)
+    logger.debug("Extensions %s (index %d) not found — returning None.", candidate_names, ext_index)
     return None
 
 
@@ -264,7 +273,8 @@ class FITSLoader:
 
             # --- Header & WCS ------------------------------------------------
             sci_hdu = (
-                hdul["SCI"] if "SCI" in hdul
+                hdul["IMAGE"] if "IMAGE" in hdul
+                else hdul["SCI"] if "SCI" in hdul
                 else hdul[1] if len(hdul) > 1
                 else hdul[0]
             )
